@@ -44,14 +44,14 @@
             font-size: 0.9em;
         }
 
-        .info-box {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 10px;
-            padding: 15px;
+        .success-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
             margin-bottom: 20px;
-            font-size: 0.9em;
-            color: #856404;
         }
 
         .input-section {
@@ -190,6 +190,31 @@
             color: #333;
         }
 
+        .packet-info {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .packet-stat {
+            text-align: center;
+        }
+
+        .packet-stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .packet-stat-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
         .individual-pings {
             margin-top: 15px;
             padding: 15px;
@@ -261,10 +286,9 @@
 <body>
     <div class="container">
         <h1>🚀 تستر پینگ واقعی ICMP</h1>
-        <p class="subtitle">اندازه‌گیری دقیق پینگ با استفاده از API عمومی</p>
-        
-        <div class="info-box">
-            💡 <strong>توجه:</strong> این ابزار از یک API عمومی برای انجام ICMP ping واقعی استفاده می‌کند. نتایج دقیق و واقعی هستند.
+        <p class="subtitle">اندازه‌گیری دقیق پینگ با پروتکل ICMP واقعی</p>
+        <div style="text-align: center;">
+            <span class="success-badge">✓ ICMP Ping واقعی با سرور بک‌اند</span>
         </div>
 
         <div class="input-section">
@@ -276,174 +300,6 @@
     </div>
 
     <script>
-        async function pingViaAPI(host) {
-            try {
-                // استفاده از API عمومی ping.pe
-                const response = await fetch(`https://ping.pe/${host}.json`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('API در دسترس نیست');
-                }
-                
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                // اگر API اول کار نکرد، از روش جایگزین استفاده می‌کنیم
-                return await pingFallback(host);
-            }
-        }
-
-        async function pingFallback(host) {
-            // روش جایگزین: اندازه‌گیری HTTP latency
-            const results = [];
-            const count = 5;
-            
-            for (let i = 0; i < count; i++) {
-                const startTime = performance.now();
-                
-                try {
-                    await fetch(`http://${host}/favicon.ico`, {
-                        mode: 'no-cors',
-                        cache: 'no-cache'
-                    });
-                    
-                    const endTime = performance.now();
-                    results.push({
-                        time: endTime - startTime,
-                        success: true
-                    });
-                } catch (error) {
-                    const endTime = performance.now();
-                    results.push({
-                        time: endTime - startTime,
-                        success: false
-                    });
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            
-            return { pings: results };
-        }
-
-        function getPingClass(ping) {
-            if (ping < 50) return 'ping-excellent';
-            if (ping < 100) return 'ping-good';
-            if (ping < 200) return 'ping-fair';
-            return 'ping-poor';
-        }
-
-        function displayResult(host, data) {
-            const resultsDiv = document.getElementById('results');
-            
-            let pings = [];
-            let avg, min, max;
-            
-            if (data.pings) {
-                pings = data.pings;
-                const validPings = pings.filter(p => p.success && p.time).map(p => p.time);
-                
-                if (validPings.length > 0) {
-                    avg = (validPings.reduce((a, b) => a + b, 0) / validPings.length).toFixed(2);
-                    min = Math.min(...validPings).toFixed(2);
-                    max = Math.max(...validPings).toFixed(2);
-                } else {
-                    avg = min = max = 'N/A';
-                }
-            } else {
-                avg = min = max = 'N/A';
-            }
-            
-            const pingsHtml = pings.map((p, i) => `
-                <div class="ping-item ${p.success ? 'success' : 'failed'}">
-                    #${i + 1}: ${p.success ? p.time.toFixed(2) + ' ms' : 'خطا'}
-                </div>
-            `).join('');
-            
-            const resultHtml = `
-                <div class="result-item">
-                    <div class="result-header">
-                        <span class="ip-address">${host}</span>
-                        <span class="ping-value ${getPingClass(avg)}">
-                            ${avg !== 'N/A' ? avg + ' ms' : 'خطا'}
-                        </span>
-                    </div>
-                    <div class="ping-details">
-                        <div class="detail-item">
-                            <span class="detail-label">حداقل</span>
-                            <span class="detail-value">${min !== 'N/A' ? min + ' ms' : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">حداکثر</span>
-                            <span class="detail-value">${max !== 'N/A' ? max + ' ms' : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">میانگین</span>
-                            <span class="detail-value">${avg !== 'N/A' ? avg + ' ms' : 'N/A'}</span>
-                        </div>
-                    </div>
-                    <div class="individual-pings">
-                        <h4>نتایج individual:</h4>
-                        <div class="ping-list">
-                            ${pingsHtml}
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
-        }
-
         async function startTest() {
             const ipInput = document.getElementById('ipInput');
-            const testBtn = document.getElementById('testBtn');
-            const host = ipInput.value.trim();
-            
-            if (!host) {
-                alert('لطفاً یک آدرس IP یا دامنه وارد کنید');
-                return;
-            }
-            
-            testBtn.disabled = true;
-            testBtn.textContent = 'در حال تست...';
-            
-            const resultsDiv = document.getElementById('results');
-            const loadingHtml = `
-                <div class="loading" id="loadingIndicator">
-                    <div class="spinner"></div>
-                    <div>در حال اندازه‌گیری پینگ ${host}...</div>
-                </div>
-            `;
-            resultsDiv.innerHTML = loadingHtml + resultsDiv.innerHTML;
-            
-            try {
-                const data = await pingViaAPI(host);
-                document.getElementById('loadingIndicator').remove();
-                displayResult(host, data);
-            } catch (error) {
-                document.getElementById('loadingIndicator').remove();
-                resultsDiv.innerHTML = `
-                    <div class="error-message">
-                        ❌ خطا در اندازه‌گیری پینگ: ${error.message}
-                    </div>
-                ` + resultsDiv.innerHTML;
-            }
-            
-            testBtn.disabled = false;
-            testBtn.textContent = 'تست پینگ';
-            ipInput.value = '';
-        }
-
-        document.getElementById('ipInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                startTest();
-            }
-        });
-    </script>
-</body>
-</html>
+            const testBtn = document.getElementById('testBtn
